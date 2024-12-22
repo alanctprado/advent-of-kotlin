@@ -13,11 +13,10 @@ fun main() {
         val reports: List<List<Int>> = input.map { line: String ->
             line.split(" ").map { it.toInt() }
         }
-        val differences: List<List<Int>> = reports.map { report: List<Int> ->
-            report.zipWithNext { a, b -> b - a }
-        }
         var result: Int = 0
-        for (instance in differences) if (validateReportDifferences(instance)) result += 1
+        for (instance in reports)
+            if (instance.size == 1 || validateReportDifferences(instance.zipWithNext { a, b -> b - a }))
+                result++
         return result
     }
 
@@ -27,15 +26,13 @@ fun main() {
         }
         var result: Int = 0
         for (report in reports) {
-            val differences: List<Int> = report.zipWithNext { a, b -> b - a }
-            if (validateReportDifferences(differences)) {
-                result += 1
+            if (report.size <= 2) {
+                result++
                 continue
             }
             for (index in report.indices) {
                 val newReport = report.toMutableList().apply { removeAt(index) }
-                val new_differences: List<Int> = newReport.zipWithNext { a, b -> b - a }
-                if (validateReportDifferences(new_differences)) {
+                if (validateReportDifferences(newReport.zipWithNext { a, b -> b - a })) {
                     result += 1
                     break
                 }
