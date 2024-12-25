@@ -42,68 +42,54 @@ fun main() {
         return visitedMatrix.sumOf { row -> row.count { position -> position == 'X' } }
     }
 
-    fun part3(): Int {
+    fun resetPosition(newX: Int, newY: Int, newDirection: Int) {
+        currentX = newX
+        currentY = newY
+        direction = newDirection
+    }
+
+    fun resetPosition(newPosition: Pair<Pair<Int, Int>, Int>) = resetPosition(newPosition.first.second, newPosition.first.first, newPosition.second)
+
+    fun currentPosition() = (currentY to currentX) to direction
+
+    fun part2(): Int {
         val obstacleMatrix = charMatrix.map { it.toMutableList() }
-        currentX = initialPosition.second
-        currentY = initialPosition.first
-        direction = 0
+        resetPosition(initialPosition.second, initialPosition.first, 0)  // resetting after running part1
+        val visitedSet = mutableSetOf<Pair<Pair<Int, Int>, Int>>()
+
+        // note: obstacles only matter if they are found within the original path
         while (true) {
-            val previousPosition = (currentY to currentX) to direction
+            val previousPosition= currentPosition()
+            visitedSet.add(previousPosition)
+
+            // get the next possible obstacle position and add it to the grid
             move()
-            if (isOutside()) break
-            val obstaclePosition = currentY to currentX
-            if (charMatrix[obstaclePosition.first][obstaclePosition.second] != '.') continue
-            charMatrix[obstaclePosition.first][obstaclePosition.second] = '#'
-            currentX = previousPosition.first.second
-            currentY = previousPosition.first.first
-            direction = previousPosition.second
-            val visitedSet = mutableSetOf<Pair<Pair<Int, Int>, Int>>()
+            if (isOutside()) break  // cannot place an obstacle outside the grid
+            val obstaclePosition = currentPosition().first
+            if (obstacleMatrix[obstaclePosition.first][obstaclePosition.second] != '.') continue  // either the start position or one that's already been checked
+            obstacleMatrix[obstaclePosition.first][obstaclePosition.second] = '?'  // mark places we already checked -- checking it again later in time is not valid
+            charMatrix[obstaclePosition.first][obstaclePosition.second] = '#'  // add the obstacle
+            resetPosition(previousPosition)  // the next move will run into the obstacle and check a new path
+
+            // move until grid is left or loop is found
+            val newVisitedSet = visitedSet.toMutableSet()
             while (!isOutside()) {
-                visitedSet.add((currentY to currentX) to direction)
+                newVisitedSet.add(currentPosition())
                 move()
-                if (isOutside()) break
-                if (visitedSet.contains((currentY to currentX) to direction)) {
+                if (newVisitedSet.contains(currentPosition())) {
                     obstacleMatrix[obstaclePosition.first][obstaclePosition.second] = 'X'
                     break
                 }
             }
+
+            // reset everything and make the actual move
             charMatrix[obstaclePosition.first][obstaclePosition.second] = '.'
-            currentX = previousPosition.first.second
-            currentY = previousPosition.first.first
-            direction = previousPosition.second
+            resetPosition(previousPosition)
             move()
         }
-        val result = obstacleMatrix.sumOf { row -> row.count { position -> position == 'X' } }
-        if (obstacleMatrix[initialPosition.first][initialPosition.second] == 'X') return result - 1
-        return result
-    }
-
-    fun part2(): Int {
-        var result = 0
-        for (i in 0..<m) {
-            for (j in 0..<n) {
-                if (charMatrix[i][j] == '.') {
-                    charMatrix[i][j] = '#'
-                    currentX = initialPosition.second
-                    currentY = initialPosition.first
-                    direction = 0
-                    val visitedSet = mutableSetOf<Pair<Pair<Int, Int>, Int>>()
-                    while (!isOutside()) {
-                        visitedSet.add((currentY to currentX) to direction)
-                        move()
-                        if (visitedSet.contains((currentY to currentX) to direction)) {
-                            result++
-                            break
-                        }
-                    }
-                    charMatrix[i][j] = '.'
-                }
-            }
-        }
-        return result
+        return obstacleMatrix.sumOf { row -> row.count { position -> position == 'X' } }
     }
 
     part1().println()
     part2().println()
-    part3().println()
 }
